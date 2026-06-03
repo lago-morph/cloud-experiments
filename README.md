@@ -1,2 +1,10 @@
 # cloud-experiments
-Experiments with various cloud providers
+
+A repository for experiments with various cloud providers.
+
+## Providers
+
+- `aws/` — Amazon Web Services
+- `azure/` — Microsoft Azure
+- `gcp/` — Google Cloud Platform
+- `cloudflare/` — Cloudflare
