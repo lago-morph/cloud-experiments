@@ -1,0 +1,10 @@
+# Secrets and local state — never commit these.
+.env
+
+# Terraform state contains the generated DB password in plaintext.
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfplan
+terraform/crash.log

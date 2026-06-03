@@ -1,0 +1,31 @@
+# Two containers, bound together:
+#   grafana-stack  - Alloy (collector) + Mimir (TSDB) + Grafana (dashboards)
+#   db-load        - drives demo traffic against the managed Postgres instance
+#
+# Connection details come from .env (generated from terraform outputs; never
+# committed). See .env.example and the README.
+services:
+  grafana-stack:
+    build: ./stack
+    container_name: pg-grafana-stack
+    ports:
+      - "3000:3000"
+    environment:
+      # DSN the Alloy postgres exporter uses to scrape in-database metrics.
+      PG_EXPORTER_DSN: "postgresql://${PG_USER}:${PG_PASSWORD}@${PG_HOST}:5432/${PG_DATABASE}?sslmode=require"
+    restart: unless-stopped
+
+  db-load:
+    build: ./load
+    container_name: pg-db-load
+    environment:
+      PGHOST: "${PG_HOST}"
+      PGUSER: "${PG_USER}"
+      PGPASSWORD: "${PG_PASSWORD}"
+      PGDATABASE: "${PG_DATABASE}"
+      PGSSLMODE: "require"
+      # One query batch every 5 minutes, as specified for the demo.
+      LOAD_INTERVAL_SECONDS: "300"
+    restart: unless-stopped
+    depends_on:
+      - grafana-stack
