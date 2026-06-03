@@ -1,6 +1,10 @@
 # Secrets and local state — never commit these.
 .env
 
+# Sandbox egress-proxy CA certs transplanted into the build context at runtime.
+# Kept out of git; .gitkeep preserves the directory. See repo-root AGENTS.md.
+stack/certs/*.crt
+
 # Terraform state contains the generated DB password in plaintext.
 terraform/.terraform/
 terraform/.terraform.lock.hcl

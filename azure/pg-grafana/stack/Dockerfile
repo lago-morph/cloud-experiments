@@ -4,11 +4,19 @@ FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Grafana + Alloy from the Grafana apt repo; Mimir from GitHub releases.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates curl gnupg supervisor libfontconfig1 && \
-    mkdir -p /etc/apt/keyrings && \
+        ca-certificates curl gnupg supervisor libfontconfig1
+
+# Trust any extra CA certs placed in ./certs (e.g. a TLS-inspection egress
+# proxy's root CA). The directory holds only .gitkeep by default, so this is a
+# harmless no-op on a normal laptop. See the repo-root AGENTS.md for why this is
+# needed inside the Claude sandbox.
+COPY certs/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# Grafana + Alloy from the Grafana apt repo; Mimir from GitHub releases.
+RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://apt.grafana.com/gpg.key | gpg --dearmor -o /etc/apt/keyrings/grafana.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" \
         > /etc/apt/sources.list.d/grafana.list && \
