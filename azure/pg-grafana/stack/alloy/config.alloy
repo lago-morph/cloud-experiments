@@ -1,0 +1,19 @@
+// Scrape in-database PostgreSQL metrics and ship them to the local Mimir.
+// The DSN is injected via the PG_EXPORTER_DSN environment variable.
+
+prometheus.exporter.postgres "db" {
+  data_source_names = [sys.env("PG_EXPORTER_DSN")]
+}
+
+prometheus.scrape "pg" {
+  targets         = prometheus.exporter.postgres.db.targets
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+  scrape_interval = "15s"
+  job_name        = "azure-postgres"
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://localhost:9009/api/v1/push"
+  }
+}
