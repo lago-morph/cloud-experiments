@@ -26,5 +26,5 @@ output "management_database" {
 
 output "resource_group" {
   description = "Resource group containing the demo resources."
-  value       = azurerm_resource_group.rg.name
+  value       = local.rg_name
 }

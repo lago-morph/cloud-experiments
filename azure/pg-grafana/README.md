@@ -60,12 +60,65 @@ export ARM_SUBSCRIPTION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 > `ARM_SUBSCRIPTION_ID` are on the subscription / tenant overview pages
 > (`az account show` prints both if you have the Azure CLI).
 
+### Step 2b — If all you have is a username, password, client ID, and secret
+
+Temporary lab subscriptions (e.g. **A Cloud Guru / Real Hands-On Labs**) often
+hand you just four things: a portal **username** + **password** and a service
+principal **client ID** + **secret** — no tenant ID, no subscription ID, and a
+**pre-created resource group** you're locked into. You can derive everything
+else from those values. Paste the four into the block below and run it (needs
+`curl` + `python3`):
+
+```bash
+# --- Paste the four values your lab gave you ---
+LAB_USERNAME='cloud_user_xxxxx@realhandsonlabs.com'   # used only to find the tenant
+export ARM_CLIENT_ID='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+export ARM_CLIENT_SECRET='your-service-principal-secret'
+# (the portal password isn't needed below — the service principal is enough)
+
+# --- Derive the tenant ID from the username's email domain ---
+LAB_DOMAIN="${LAB_USERNAME##*@}"
+export ARM_TENANT_ID=$(curl -s \
+  "https://login.microsoftonline.com/${LAB_DOMAIN}/v2.0/.well-known/openid-configuration" \
+  | python3 -c "import sys,json,re;print(re.search(r'/([0-9a-f-]{36})/',json.load(sys.stdin)['token_endpoint']).group(1))")
+
+# --- Get a management token, then discover the subscription + resource group ---
+TOKEN=$(curl -s -X POST "https://login.microsoftonline.com/${ARM_TENANT_ID}/oauth2/v2.0/token" \
+  --data-urlencode "client_id=${ARM_CLIENT_ID}" \
+  --data-urlencode "client_secret=${ARM_CLIENT_SECRET}" \
+  --data-urlencode "grant_type=client_credentials" \
+  --data-urlencode "scope=https://management.azure.com/.default" \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+
+export ARM_SUBSCRIPTION_ID=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://management.azure.com/subscriptions?api-version=2020-01-01" \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['value'][0]['subscriptionId'])")
+
+export TF_VAR_existing_resource_group_name=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://management.azure.com/subscriptions/${ARM_SUBSCRIPTION_ID}/resourcegroups?api-version=2021-04-01" \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['value'][0]['name'])")
+
+echo "tenant=$ARM_TENANT_ID"
+echo "subscription=$ARM_SUBSCRIPTION_ID"
+echo "resource_group=$TF_VAR_existing_resource_group_name"
+```
+
+`TF_VAR_existing_resource_group_name` tells Terraform to deploy **into the lab's
+existing resource group** instead of creating a new one (the lab SP isn't
+allowed to create resource groups).
+
+> **Region note:** lab subscriptions are usually restricted to a subset of
+> regions for Postgres. If `terraform apply` fails with
+> `LocationIsOfferRestricted`, pick another region:
+> `export TF_VAR_location=eastus2` (then try `centralus`, `westus2`, …).
+> The resource group's own region does **not** have to match the server's.
+
 ## Step 3 — Create the database with Terraform
 
 ```bash
 cd terraform
 terraform init
-terraform apply        # review the plan, then type "yes"
+terraform apply        # review the plan, then type "yes"  (-auto-approve to skip)
 cd ..
 ```
 

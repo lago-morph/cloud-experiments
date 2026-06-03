@@ -22,6 +22,12 @@ variable "postgres_version" {
   default     = "16"
 }
 
+variable "existing_resource_group_name" {
+  type        = string
+  description = "Use this pre-existing resource group instead of creating one. Leave empty to create a new RG."
+  default     = ""
+}
+
 # For the demo we open the firewall wide so the (ephemeral) container host can
 # reach the server. Tighten these to a specific IP for anything real.
 variable "allowed_client_ip_start" {

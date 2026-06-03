@@ -10,9 +10,23 @@ resource "random_password" "admin" {
   override_special = "!#$%*-_=+"
 }
 
+# Use an existing resource group when one is supplied (e.g. a locked-down lab
+# subscription that only grants access to a pre-created RG); otherwise create
+# one.
 resource "azurerm_resource_group" "rg" {
+  count    = var.existing_resource_group_name == "" ? 1 : 0
   name     = "${var.prefix}-rg"
   location = var.location
+}
+
+data "azurerm_resource_group" "existing" {
+  count = var.existing_resource_group_name == "" ? 0 : 1
+  name  = var.existing_resource_group_name
+}
+
+locals {
+  rg_name     = var.existing_resource_group_name == "" ? azurerm_resource_group.rg[0].name : data.azurerm_resource_group.existing[0].name
+  rg_location = var.existing_resource_group_name == "" ? azurerm_resource_group.rg[0].location : data.azurerm_resource_group.existing[0].location
 }
 
 # Burstable, minimum-spec dev instance:
@@ -20,8 +34,8 @@ resource "azurerm_resource_group" "rg" {
 #   32768 MB        = 32 GiB (smallest supported storage)
 resource "azurerm_postgresql_flexible_server" "pg" {
   name                = "${var.prefix}-${random_string.suffix.result}"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  resource_group_name = local.rg_name
+  location            = local.rg_location
   version             = var.postgres_version
 
   administrator_login    = var.admin_username

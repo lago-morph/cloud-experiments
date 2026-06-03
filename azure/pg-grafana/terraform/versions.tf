@@ -18,4 +18,9 @@ terraform {
 #   ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID, ARM_SUBSCRIPTION_ID
 provider "azurerm" {
   features {}
+
+  # Don't attempt subscription-wide resource provider registration: locked-down
+  # lab subscriptions forbid it (and the needed providers are already
+  # registered). Safe to keep on for normal subscriptions too.
+  resource_provider_registrations = "none"
 }
