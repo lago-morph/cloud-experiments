@@ -1,5 +1,27 @@
 # Azure PostgreSQL + Grafana monitoring demo
 
+> ⚠️ **NOT TESTED END-TO-END.** This project was developed inside a cloud
+> sandbox whose limitations prevented a full live run, so **treat it as a
+> reference implementation, not a verified one.** Specifically:
+>
+> - **Live Azure provisioning was never completed.** The throwaway lab
+>   subscription available during development was *offer-restricted* for Azure
+>   Database for PostgreSQL Flexible Server in every region tried (eastus,
+>   eastus2, centralus, westus2/3, southcentralus, westus), so `terraform apply`
+>   could not create the server. The Terraform was validated and planned, but
+>   not applied successfully.
+> - **The containers were never connected to a real database.** Whether the
+>   `grafana-stack` and `db-load` containers can reach an Azure Postgres server
+>   on port 5432 from a given network was not verified.
+>
+> What *was* verified in the sandbox: Terraform `validate`/`plan`; that the
+> `grafana-stack` image builds and runs with Mimir, Alloy and Grafana all up;
+> that Grafana reaches Mimir; that the Mimir datasource and the "Azure
+> PostgreSQL Demo" dashboard provision; that `admin/admin` login works; and that
+> the `db-load` image builds. The PromQL queries and the live metric flow have
+> **not** been exercised against real data. Expect to debug when you run it for
+> real.
+
 A self-contained proof of concept that:
 
 1. Uses **Terraform** to create a minimum-spec, burstable **Azure Database for
